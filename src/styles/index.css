@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-cream: #FAF8F5;
+  --color-cream-dark: #F0EDE8;
+  --color-warm-text: #3D2C2C;
+  --color-muted-text: #9B7B6B;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #FAF8F5;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Warm card shadow */
+.card-shadow {
+  box-shadow:
+    0 4px 6px -1px rgba(180, 120, 80, 0.08),
+    0 10px 30px -5px rgba(180, 120, 80, 0.15),
+    0 20px 60px -10px rgba(180, 120, 80, 0.10);
+}
+
+.card-shadow-hover {
+  box-shadow:
+    0 6px 12px -2px rgba(180, 120, 80, 0.12),
+    0 16px 40px -8px rgba(180, 120, 80, 0.20),
+    0 30px 80px -15px rgba(180, 120, 80, 0.14);
+}
+
+/* Hide scrollbar for history carousel */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth transitions for topic tiles */
+.topic-tile {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Subtle background ambient glow */
+.ambient-bg {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(255, 179, 198, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(168, 230, 207, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(201, 184, 232, 0.05) 0%, transparent 70%),
+    #FAF8F5;
+}
