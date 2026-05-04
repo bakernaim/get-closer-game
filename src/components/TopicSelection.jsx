@@ -23,11 +23,28 @@ export default function TopicSelection({
   resumeGame,
   dismissResume,
   totalQuestionsSelected,
+  onBack,
 }) {
   const canStart = state.selectedTopics.length > 0
 
   return (
     <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto">
+      {/* Back to Home */}
+      {onBack && (
+        <motion.button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-medium mb-6"
+          style={{ color: '#9B7B6B' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Home
+        </motion.button>
+      )}
+
       {/* Header */}
       <motion.div
         className="text-center mb-8"
