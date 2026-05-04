@@ -1,13 +1,140 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// ─── Sound effects — realistic board piece sounds ─────────────────────────────
+function _noise(ctx, durationSec) {
+  const len = Math.floor(ctx.sampleRate * durationSec)
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate)
+  const d = buf.getChannelData(0)
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1
+  const src = ctx.createBufferSource()
+  src.buffer = buf
+  return src
+}
+
+// Light wooden tap — piece placed on board
+function playMove() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+    const src = _noise(ctx, 0.08)
+    const bp = ctx.createBiquadFilter()
+    bp.type = 'bandpass'; bp.frequency.value = 950; bp.Q.value = 2.8
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.55, t)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.065)
+    src.connect(bp); bp.connect(gain); gain.connect(ctx.destination)
+    src.start(t); src.stop(t + 0.09)
+    src.onended = () => ctx.close()
+  } catch (_) {}
+}
+
+// Hard thud + secondary crack — piece captured
+function playCapture() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+    // Primary deep thud
+    const src1 = _noise(ctx, 0.14)
+    const bp1 = ctx.createBiquadFilter()
+    bp1.type = 'bandpass'; bp1.frequency.value = 480; bp1.Q.value = 1.6
+    const g1 = ctx.createGain()
+    g1.gain.setValueAtTime(1.0, t)
+    g1.gain.exponentialRampToValueAtTime(0.001, t + 0.13)
+    src1.connect(bp1); bp1.connect(g1); g1.connect(ctx.destination)
+    src1.start(t); src1.stop(t + 0.15)
+    // Secondary crack (captured piece bouncing)
+    const src2 = _noise(ctx, 0.06)
+    const bp2 = ctx.createBiquadFilter()
+    bp2.type = 'bandpass'; bp2.frequency.value = 1400; bp2.Q.value = 3.5
+    const g2 = ctx.createGain()
+    g2.gain.setValueAtTime(0.45, t + 0.07)
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.14)
+    src2.connect(bp2); bp2.connect(g2); g2.connect(ctx.destination)
+    src2.start(t + 0.07); src2.stop(t + 0.15)
+    src1.onended = () => ctx.close()
+  } catch (_) {}
+}
+
+// Victory — party horn blast (sawtooth + vibrato + bandpass, staggered horns)
+function playWin() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+
+    function horn(freq, delay, dur, vol) {
+      const s = t + delay
+      // Two detuned sawtooth oscillators for thickness
+      const osc1 = ctx.createOscillator()
+      const osc2 = ctx.createOscillator()
+      osc1.type = osc2.type = 'sawtooth'
+      // Pitch bend up on attack — the "tooting" blow
+      osc1.frequency.setValueAtTime(freq * 0.86, s)
+      osc1.frequency.exponentialRampToValueAtTime(freq, s + 0.06)
+      osc2.frequency.setValueAtTime(freq * 0.86 * 1.02, s)
+      osc2.frequency.exponentialRampToValueAtTime(freq * 1.02, s + 0.06)
+      // Vibrato LFO
+      const lfo = ctx.createOscillator()
+      lfo.frequency.value = 5.5
+      const lfoGain = ctx.createGain()
+      lfoGain.gain.value = freq * 0.014
+      lfo.connect(lfoGain)
+      lfoGain.connect(osc1.frequency)
+      lfoGain.connect(osc2.frequency)
+      // Bandpass filter — nasal party-horn character
+      const bp = ctx.createBiquadFilter()
+      bp.type = 'bandpass'; bp.frequency.value = freq * 1.6; bp.Q.value = 1.1
+      // Gain envelope
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0, s)
+      gain.gain.linearRampToValueAtTime(vol, s + 0.05)
+      gain.gain.setValueAtTime(vol * 0.8, s + dur - 0.12)
+      gain.gain.exponentialRampToValueAtTime(0.001, s + dur)
+      osc1.connect(bp); osc2.connect(bp); bp.connect(gain); gain.connect(ctx.destination)
+      lfo.start(s); lfo.stop(s + dur + 0.05)
+      osc1.start(s); osc1.stop(s + dur + 0.05)
+      osc2.start(s); osc2.stop(s + dur + 0.05)
+    }
+
+    // Six staggered party horns at festive pitches
+    horn(523, 0.00, 1.0,  0.15)  // C5
+    horn(659, 0.07, 0.95, 0.13)  // E5
+    horn(784, 0.13, 1.05, 0.13)  // G5
+    horn(440, 0.04, 0.9,  0.12)  // A4
+    horn(587, 0.10, 1.0,  0.12)  // D5
+    horn(698, 0.18, 0.88, 0.11)  // F5
+    setTimeout(() => ctx.close(), 3000)
+  } catch (_) {}
+}
+
+// Rising tones — king promotion fanfare
+function playKing() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+    ;[523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const s = t + i * 0.1
+      osc.frequency.setValueAtTime(freq, s)
+      gain.gain.setValueAtTime(0, s)
+      gain.gain.linearRampToValueAtTime(0.25, s + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.001, s + 0.42)
+      osc.start(s); osc.stop(s + 0.45)
+    })
+    setTimeout(() => ctx.close(), 1400)
+  } catch (_) {}
+}
+
 // ─── Turkish Dama Rules ───────────────────────────────────────────────────────
 // 0=empty  1=P1 man  2=P2 man  3=P1 king  4=P2 king
 //
 // Setup  : P2 fills rows 1–2 (all 8 cols), P1 fills rows 5–6 (all 8 cols)
 // Move   : men move FORWARD + SIDEWAYS (orthogonal, not diagonal, not backward)
 //          kings move all 4 orthogonal directions
-// Capture: both men and kings jump in all 4 orthogonal directions (incl. backward)
+// Capture: men capture forward + sideways only (no backward); kings capture all 4 directions
 // King   : man reaching opponent's back row is promoted
 // Mandatory capture + multi-jump chain required
 
@@ -68,8 +195,8 @@ function jumpsFrom(board, r, c, player, skip = []) {
       }
     }
   } else {
-    // Regular man: short jump only
-    for (const [dr, dc] of ORTHO) {
+    // Regular man: capture only forward + sideways (same dirs as walking — no backward)
+    for (const [dr, dc] of walkDirs(v)) {
       const er = r + dr, ec = c + dc
       const lr = r + 2 * dr, lc = c + 2 * dc
       if (!inBounds(er, ec) || !inBounds(lr, lc)) continue
@@ -265,6 +392,17 @@ export default function Dama({ onBack }) {
   const isOver   = winner !== null
   const mustJump = jumpPiece != null || anyJumps(board, turn)
 
+  // Pieces the current player is forced to capture with
+  const capturablePieces = useMemo(() => {
+    if (!mustJump) return null
+    const set = new Set()
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++)
+        if (owns(board[r][c], turn) && jumpsFrom(board, r, c, turn).length > 0)
+          set.add(`${r},${c}`)
+    return set
+  }, [board, turn, mustJump])
+
   function handleClick(r, c) {
     if (isOver) return
 
@@ -296,10 +434,13 @@ export default function Dama({ onBack }) {
     const nb = applyMove(board, fr, fc, m.toR, m.toC, m.capR, m.capC)
     setBoard(nb)
 
+    const wasPromoted = (nb[m.toR][m.toC] === 3 && board[fr][fc] === 1) ||
+                        (nb[m.toR][m.toC] === 4 && board[fr][fc] === 2)
+
     if (m.capR != null) {
+      playCapture()
+      if (wasPromoted) playKing()
       const newSkip = [...skipCells, [m.capR, m.capC]]
-      const wasPromoted = (nb[m.toR][m.toC] === 3 && board[fr][fc] === 1) ||
-                          (nb[m.toR][m.toC] === 4 && board[fr][fc] === 2)
       if (!wasPromoted) {
         const more = jumpsFrom(nb, m.toR, m.toC, turn, newSkip)
         if (more.length > 0) {
@@ -310,6 +451,9 @@ export default function Dama({ onBack }) {
           return
         }
       }
+    } else {
+      playMove()
+      if (wasPromoted) playKing()
     }
     endTurn(nb)
   }
@@ -318,6 +462,7 @@ export default function Dama({ onBack }) {
     setSel(null); setMoves([]); setJumpPiece(null); setSkipCells([])
     const next = turn === 1 ? 2 : 1
     if (!hasMoves(nb, next)) {
+      playWin()
       setWinner(turn)
       setScores(s => ({ ...s, [turn]: s[turn] + 1 }))
     } else {
@@ -431,12 +576,13 @@ export default function Dama({ onBack }) {
             {board.map((row, r) => (
               <div key={r} className="flex gap-0.5">
                 {row.map((cell, c) => {
-                  const light    = isLight(r, c)
-                  const selected = isSelected(r, c)
-                  const validDst = isValidDest(r, c)
-                  const capTgt   = isCapTgt(r, c)
-                  const king     = isKing(cell)
-                  const owner    = isP1(cell) ? 1 : isP2(cell) ? 2 : null
+                  const light       = isLight(r, c)
+                  const selected    = isSelected(r, c)
+                  const validDst    = isValidDest(r, c)
+                  const capTgt      = isCapTgt(r, c)
+                  const king        = isKing(cell)
+                  const owner       = isP1(cell) ? 1 : isP2(cell) ? 2 : null
+                  const mustCapHere = mustJump && !selected && capturablePieces?.has(`${r},${c}`)
 
                   return (
                     <motion.div key={c}
@@ -480,17 +626,32 @@ export default function Dama({ onBack }) {
                             background: `radial-gradient(circle at 35% 30%, ${P[owner].disc}EE, ${P[owner].disc})`,
                             boxShadow: selected
                               ? `0 0 0 2.5px white, 0 0 16px ${P[owner].glow}, 0 3px 10px ${P[owner].shadow}`
-                              : capTgt
-                                ? `0 0 0 2px rgba(255,80,80,0.85), 0 3px 10px ${P[owner].shadow}`
-                                : `0 3px 8px ${P[owner].shadow}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                              : mustCapHere
+                                ? `0 0 0 2.5px #F5C542, 0 0 14px rgba(245,197,66,0.75), 0 3px 10px ${P[owner].shadow}`
+                                : capTgt
+                                  ? `0 0 0 2px rgba(255,80,80,0.85), 0 3px 10px ${P[owner].shadow}`
+                                  : `0 3px 8px ${P[owner].shadow}, inset 0 1px 0 rgba(255,255,255,0.3)`,
                             transition: 'box-shadow 0.2s ease',
                             fontSize: 'calc(var(--cell) * 0.3)',
                           }}
                           initial={{ scale: 0.4, opacity: 0 }}
-                          animate={selected ? { scale: [1.05, 1.12, 1.05] } : { scale: 1, opacity: 1 }}
-                          transition={selected
-                            ? { duration: 0.9, repeat: Infinity, ease: 'easeInOut' }
-                            : { type: 'spring', stiffness: 400, damping: 20 }
+                          animate={
+                            selected
+                              ? { scale: [1.05, 1.12, 1.05] }
+                              : mustCapHere
+                                ? { scale: [1, 1.1, 1], boxShadow: [
+                                    `0 0 0 2px #F5C542, 0 0 10px rgba(245,197,66,0.6), 0 3px 10px ${P[owner].shadow}`,
+                                    `0 0 0 3px #F5C542, 0 0 22px rgba(245,197,66,0.9), 0 3px 10px ${P[owner].shadow}`,
+                                    `0 0 0 2px #F5C542, 0 0 10px rgba(245,197,66,0.6), 0 3px 10px ${P[owner].shadow}`,
+                                  ]}
+                                : { scale: 1, opacity: 1 }
+                          }
+                          transition={
+                            selected
+                              ? { duration: 0.9, repeat: Infinity, ease: 'easeInOut' }
+                              : mustCapHere
+                                ? { duration: 0.85, repeat: Infinity, ease: 'easeInOut' }
+                                : { type: 'spring', stiffness: 400, damping: 20 }
                           }
                         >
                           {king && (

@@ -59,6 +59,73 @@ function getWinningCells(board) {
   return []
 }
 
+// Victory fanfare — ascending arpeggio + chord bloom
+function playWin() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+    // Rising arpeggio
+    ;[392, 523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const s = t + i * 0.1
+      osc.frequency.setValueAtTime(freq, s)
+      gain.gain.setValueAtTime(0, s)
+      gain.gain.linearRampToValueAtTime(0.28, s + 0.03)
+      gain.gain.exponentialRampToValueAtTime(0.001, s + 0.6)
+      osc.start(s); osc.stop(s + 0.65)
+    })
+    // Final chord bloom
+    ;[523, 659, 784].forEach((freq) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.type = 'sine'
+      const s = t + 0.55
+      osc.frequency.setValueAtTime(freq * 2, s)
+      gain.gain.setValueAtTime(0.16, s)
+      gain.gain.exponentialRampToValueAtTime(0.001, s + 1.1)
+      osc.start(s); osc.stop(s + 1.2)
+    })
+    setTimeout(() => ctx.close(), 2500)
+  } catch (_) {}
+}
+
+// Slide + thud sound when dropping a disc
+function playDrop() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const t = ctx.currentTime
+    // Sliding sweep: disc sliding down the column
+    const osc = ctx.createOscillator()
+    const g1 = ctx.createGain()
+    osc.connect(g1); g1.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(900, t)
+    osc.frequency.exponentialRampToValueAtTime(200, t + 0.2)
+    g1.gain.setValueAtTime(0.1, t)
+    g1.gain.linearRampToValueAtTime(0, t + 0.2)
+    osc.start(t); osc.stop(t + 0.2)
+    // Landing thud: lowpass-filtered noise burst
+    const len = Math.floor(ctx.sampleRate * 0.12)
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    const lp = ctx.createBiquadFilter()
+    lp.type = 'lowpass'; lp.frequency.value = 360; lp.Q.value = 1.2
+    const g2 = ctx.createGain()
+    g2.gain.setValueAtTime(0.85, t + 0.18)
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.32)
+    src.connect(lp); lp.connect(g2); g2.connect(ctx.destination)
+    src.start(t + 0.18); src.stop(t + 0.34)
+    src.onended = () => ctx.close()
+  } catch (_) {}
+}
+
 function isBoardFull(board) {
   return board[0].every(cell => cell !== 0)
 }
@@ -267,9 +334,11 @@ export default function Connect4({ onBack }) {
     const result = dropDisc(board, col, currentPlayer)
     if (!result) return
     const { board: newBoard, row } = result
+    playDrop()
     setBoard(newBoard)
     setLastDrop({ row, col })
     if (checkWin(newBoard, row, col, currentPlayer)) {
+      playWin()
       setWinner(currentPlayer)
       setWinCells(getWinningCells(newBoard))
       setScores(s => ({ ...s, [currentPlayer]: s[currentPlayer] + 1 }))
