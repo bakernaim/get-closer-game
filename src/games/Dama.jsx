@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { theme } from '../theme.js'
 
 // ─── Sound effects — realistic board piece sounds ─────────────────────────────
 function _noise(ctx, durationSec) {
@@ -264,8 +265,8 @@ function applyMove(board, fr, fc, tr, tc, capR, capC) {
 
 // ─── Player palette ───────────────────────────────────────────────────────────
 const P = {
-  1: { disc: '#D83850', glow: 'rgba(216,56,80,0.7)',   shadow: 'rgba(216,56,80,0.4)',   dim: 'rgba(216,56,80,0.15)' },
-  2: { disc: '#E8C878', glow: 'rgba(232,200,120,0.7)', shadow: 'rgba(232,200,120,0.4)', dim: 'rgba(232,200,120,0.15)' },
+  1: theme.dama.p1,
+  2: theme.dama.p2,
 }
 
 // ─── Win particles ────────────────────────────────────────────────────────────
@@ -482,19 +483,13 @@ export default function Dama({ onBack }) {
   const isLight     = (r, c) => (r + c) % 2 === 0
 
   return (
-    <div className="min-h-screen flex flex-col"
-      style={{
-        background:
-          'radial-gradient(ellipse at 50% 0%, rgba(180,60,60,0.1) 0%, transparent 55%),' +
-          '#0A0508',
-      }}
-    >
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <div className="px-4 pt-5 pb-4 flex items-center justify-between">
         <motion.button onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: 'rgba(200,175,165,0.7)', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-          whileHover={{ backgroundColor: 'rgba(255,255,255,0.10)' }} whileTap={{ scale: 0.97 }}
+          style={{ color: theme.app.textSub, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }} whileTap={{ scale: 0.97 }}
         >
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -503,14 +498,14 @@ export default function Dama({ onBack }) {
         </motion.button>
 
         <div className="text-center">
-          <h1 className="font-serif text-xl" style={{ color: '#F0E8E0' }}>Dama</h1>
-          <p className="text-xs" style={{ color: 'rgba(200,175,165,0.4)', letterSpacing: '0.05em' }}>TURKISH</p>
+          <h1 className="font-serif text-xl" style={{ color: theme.app.text }}>Dama</h1>
+          <p className="text-xs" style={{ color: theme.app.textMuted, letterSpacing: '0.05em' }}>TURKISH</p>
         </div>
 
         <motion.button onClick={() => { resetGame(); setScores({ 1: 0, 2: 0 }) }}
           className="text-xs font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: 'rgba(200,175,165,0.5)', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-          whileHover={{ backgroundColor: 'rgba(255,255,255,0.10)' }} whileTap={{ scale: 0.97 }}
+          style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }} whileTap={{ scale: 0.97 }}
         >
           Reset
         </motion.button>
@@ -524,10 +519,13 @@ export default function Dama({ onBack }) {
             <motion.div key={p}
               className="flex-1 rounded-2xl p-3 flex flex-col items-center gap-1"
               style={{
-                background: turn === p && !isOver ? `linear-gradient(135deg, ${P[p].dim} 0%, rgba(255,255,255,0.03) 100%)` : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${turn === p && !isOver ? P[p].disc + '50' : 'rgba(255,255,255,0.07)'}`,
+                background: turn === p && !isOver
+                  ? `linear-gradient(135deg, ${P[p].dim} 0%, rgba(255,255,255,0.85) 100%)`
+                  : 'rgba(255,255,255,0.65)',
+                border: `1px solid ${turn === p && !isOver ? P[p].disc + '60' : theme.app.border}`,
                 transition: 'all 0.3s ease',
-                boxShadow: turn === p && !isOver ? `0 4px 20px ${P[p].shadow.replace('0.4','0.18')}` : 'none',
+                boxShadow: turn === p && !isOver ? `0 4px 20px ${P[p].shadow.replace('0.4','0.2')}` : '0 1px 4px rgba(100,60,80,0.06)',
+                backdropFilter: 'blur(8px)',
               }}
               animate={turn === p && !isOver ? { scale: 1.02 } : { scale: 1 }}
             >
@@ -536,8 +534,8 @@ export default function Dama({ onBack }) {
                 animate={turn === p && !isOver ? { scale: [1, 1.12, 1] } : { scale: 1 }}
                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               />
-              <span className="text-xs font-medium" style={{ color: 'rgba(200,175,165,0.5)' }}>P{p}</span>
-              <span className="text-xl font-semibold font-serif" style={{ color: turn === p && !isOver ? P[p].disc : '#C8B0A8' }}>
+              <span className="text-xs font-medium" style={{ color: theme.app.textMuted }}>P{p}</span>
+              <span className="text-xl font-semibold font-serif" style={{ color: turn === p && !isOver ? P[p].disc : theme.app.textSub }}>
                 {scores[p]}
               </span>
             </motion.div>
@@ -567,7 +565,7 @@ export default function Dama({ onBack }) {
             width: '100%',
             maxWidth: 700,
             padding: '10px',
-            background: 'linear-gradient(160deg, #3A1E08 0%, #250E02 100%)',
+            background: theme.dama.boardBg,
             boxShadow: '0 20px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06)',
             border: '1px solid rgba(255,255,255,0.06)',
           }}
@@ -596,7 +594,7 @@ export default function Dama({ onBack }) {
                           ? `${P[owner]?.disc}22`
                           : validDst && !cell
                             ? `${P[turn].disc}18`
-                            : light ? '#C49040' : '#2C1204',
+                            : light ? theme.dama.tileLight : theme.dama.tileDark,
                         cursor: !isOver ? 'pointer' : 'default',
                         boxShadow: selected
                           ? `inset 0 0 0 2px ${P[owner]?.disc}, 0 0 14px ${P[owner]?.glow}`
@@ -670,7 +668,7 @@ export default function Dama({ onBack }) {
         </div>
 
         <motion.p className="text-xs text-center pb-2"
-          style={{ color: 'rgba(180,150,140,0.3)' }}
+          style={{ color: theme.app.textMuted }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
         >
           Move forward & sideways · Capture any direction · ♛ King · Captures mandatory

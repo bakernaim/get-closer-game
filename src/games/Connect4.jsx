@@ -1,12 +1,13 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { theme } from '../theme.js'
 
 const ROWS = 6
 const COLS = 7
 
 const P = {
-  1: { disc: '#E8556A', glow: 'rgba(232,85,106,0.7)', shadow: 'rgba(232,85,106,0.45)', label: 'Player 1', dim: 'rgba(232,85,106,0.15)' },
-  2: { disc: '#E8A840', glow: 'rgba(232,168,64,0.7)',  shadow: 'rgba(232,168,64,0.45)',  label: 'Player 2', dim: 'rgba(232,168,64,0.15)' },
+  1: theme.connect4.p1,
+  2: theme.connect4.p2,
 }
 
 function createBoard() {
@@ -363,19 +364,14 @@ export default function Connect4({ onBack }) {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{
-        background:
-          'radial-gradient(ellipse at 50% 0%, rgba(74,114,184,0.12) 0%, transparent 60%),' +
-          '#0A0810',
-      }}
     >
       {/* Header */}
       <div className="px-4 pt-5 pb-4 flex items-center justify-between">
         <motion.button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: 'rgba(200,175,165,0.7)', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-          whileHover={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
+          style={{ color: theme.app.textSub, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }}
           whileTap={{ scale: 0.97 }}
         >
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
@@ -384,13 +380,13 @@ export default function Connect4({ onBack }) {
           Home
         </motion.button>
 
-        <h1 className="font-serif text-xl" style={{ color: '#F0E8E0' }}>Connect 4</h1>
+        <h1 className="font-serif text-xl" style={{ color: theme.app.text }}>Connect 4</h1>
 
         <motion.button
           onClick={() => { resetGame(); setScores({ 1: 0, 2: 0 }) }}
           className="text-xs font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: 'rgba(200,175,165,0.5)', backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-          whileHover={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
+          style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }}
           whileTap={{ scale: 0.97 }}
         >
           Reset
@@ -406,11 +402,12 @@ export default function Connect4({ onBack }) {
               className="flex-1 rounded-2xl p-3.5 flex flex-col items-center gap-1"
               style={{
                 background: currentPlayer === p && !isOver
-                  ? `linear-gradient(135deg, ${P[p].dim} 0%, rgba(255,255,255,0.03) 100%)`
-                  : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${currentPlayer === p && !isOver ? P[p].disc + '50' : 'rgba(255,255,255,0.07)'}`,
+                  ? `linear-gradient(135deg, ${P[p].dim} 0%, rgba(255,255,255,0.85) 100%)`
+                  : 'rgba(255,255,255,0.65)',
+                border: `1px solid ${currentPlayer === p && !isOver ? P[p].disc + '60' : theme.app.border}`,
                 transition: 'all 0.3s ease',
-                boxShadow: currentPlayer === p && !isOver ? `0 4px 20px ${P[p].shadow.replace('0.45','0.2')}` : 'none',
+                boxShadow: currentPlayer === p && !isOver ? `0 4px 20px ${P[p].shadow.replace('0.45','0.22')}` : '0 1px 4px rgba(100,60,80,0.06)',
+                backdropFilter: 'blur(8px)',
               }}
               animate={currentPlayer === p && !isOver ? { scale: 1.02 } : { scale: 1 }}
               transition={{ duration: 0.2 }}
@@ -424,10 +421,10 @@ export default function Connect4({ onBack }) {
                 animate={currentPlayer === p && !isOver ? { scale: [1, 1.1, 1] } : { scale: 1 }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
               />
-              <span className="text-xs font-medium" style={{ color: 'rgba(200,175,165,0.5)' }}>
+              <span className="text-xs font-medium" style={{ color: theme.app.textMuted }}>
                 Player {p}
               </span>
-              <span className="text-2xl font-semibold font-serif" style={{ color: currentPlayer === p && !isOver ? P[p].disc : '#C8B0A8' }}>
+              <span className="text-2xl font-semibold font-serif" style={{ color: currentPlayer === p && !isOver ? P[p].disc : theme.app.textSub }}>
                 {scores[p]}
               </span>
             </motion.div>
@@ -467,7 +464,7 @@ export default function Connect4({ onBack }) {
             width: '100%',
             maxWidth: 700,
             padding: '12px',
-            background: 'linear-gradient(160deg, #1A2A4A 0%, #0D1828 100%)',
+            background: theme.connect4.boardBg,
             boxShadow: '0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
             border: '1px solid rgba(255,255,255,0.06)',
           }}

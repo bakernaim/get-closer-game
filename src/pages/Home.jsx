@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { theme } from '../theme.js'
 
 // Decorative mini Connect 4 grid
 function MiniGrid() {
@@ -8,7 +9,7 @@ function MiniGrid() {
     [0, 2, 1, 0, 0],
     [2, 2, 1, 1, 0],
   ]
-  const colors = { 0: 'rgba(255,255,255,0.12)', 1: '#E8A840', 2: '#8FAADC' }
+  const colors = { 0: 'rgba(255,255,255,0.12)', 1: theme.connect4.p2.disc, 2: theme.connect4.p1.disc }
   return (
     <div className="flex flex-col gap-1.5 opacity-90">
       {layout.map((row, r) => (
@@ -82,7 +83,7 @@ function MiniDama() {
               style={{
                 width: 14, height: 14,
                 borderRadius: '3px',
-                backgroundColor: (r + c) % 2 === 0 ? '#C49040' : '#2C1204',
+                backgroundColor: (r + c) % 2 === 0 ? theme.dama.tileLight : theme.dama.tileDark,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -90,8 +91,8 @@ function MiniDama() {
                 <div style={{
                   width: 10, height: 10,
                   borderRadius: '50%',
-                  backgroundColor: cell === 'r' ? '#D83850' : '#E8C878',
-                  boxShadow: `0 1px 4px ${cell === 'r' ? 'rgba(216,56,80,0.6)' : 'rgba(232,200,120,0.6)'}`,
+                  backgroundColor: cell === 'r' ? theme.dama.p1.disc : theme.dama.p2.disc,
+                  boxShadow: `0 1px 4px ${cell === 'r' ? theme.dama.p1.shadow : theme.dama.p2.shadow}`,
                 }} />
               )}
             </div>
@@ -110,12 +111,12 @@ const GAMES = [
     description: 'Draw meaningful conversation cards. Deepen connections. Fall a little more in love.',
     players: '2+ players',
     tag: 'Conversation',
-    bg: 'linear-gradient(135deg, #5C1A2E 0%, #3A0D1A 100%)',
-    glow: 'rgba(196,104,122,0.25)',
-    accent: '#E8899A',
-    accentDim: 'rgba(232,137,154,0.18)',
-    btnBg: 'linear-gradient(135deg, #C4687A 0%, #8C3A52 100%)',
-    btnShadow: '0 8px 28px rgba(196,104,122,0.5)',
+    bg: theme.getCloser.homeBg,
+    glow: theme.getCloser.homeGlow,
+    accent: theme.getCloser.homeAccent,
+    accentDim: theme.getCloser.homeAccentDim,
+    btnBg: theme.getCloser.homeBtnBg,
+    btnShadow: theme.getCloser.homeBtnShadow,
     decoration: <MiniCards />,
   },
   {
@@ -125,27 +126,27 @@ const GAMES = [
     description: 'Outsmart your opponent. Drop your disc. Connect four before they do.',
     players: '2 players',
     tag: 'Strategy',
-    bg: 'linear-gradient(135deg, #0D2547 0%, #071529 100%)',
-    glow: 'rgba(74,114,184,0.25)',
-    accent: '#7AAAE8',
-    accentDim: 'rgba(122,170,232,0.18)',
-    btnBg: 'linear-gradient(135deg, #4A72B8 0%, #2A4A8E 100%)',
-    btnShadow: '0 8px 28px rgba(74,114,184,0.5)',
+    bg: theme.connect4.homeBg,
+    glow: theme.connect4.homeGlow,
+    accent: theme.connect4.homeAccent,
+    accentDim: theme.connect4.homeAccentDim,
+    btnBg: theme.connect4.homeBtnBg,
+    btnShadow: theme.connect4.homeBtnShadow,
     decoration: <MiniGrid />,
   },
   {
     id: 'dama',
     name: 'Dama',
     icon: '♟',
-    description: 'Capture all your opponent\'s pieces. Jump, chain, and crown your kings to victory.',
+    description: "Capture all your opponent's pieces. Jump, chain, and crown your kings to victory.",
     players: '2 players',
     tag: 'Classic',
-    bg: 'linear-gradient(135deg, #2A0E08 0%, #180A04 100%)',
-    glow: 'rgba(216,56,80,0.22)',
-    accent: '#E87868',
-    accentDim: 'rgba(216,100,80,0.18)',
-    btnBg: 'linear-gradient(135deg, #A83828 0%, #781A10 100%)',
-    btnShadow: '0 8px 28px rgba(180,56,40,0.5)',
+    bg: theme.dama.homeBg,
+    glow: theme.dama.homeGlow,
+    accent: theme.dama.homeAccent,
+    accentDim: theme.dama.homeAccentDim,
+    btnBg: theme.dama.homeBtnBg,
+    btnShadow: theme.dama.homeBtnShadow,
     decoration: <MiniDama />,
   },
 ]
@@ -156,10 +157,11 @@ export default function Home({ onSelectGame }) {
       className="min-h-screen flex flex-col"
       style={{
         background:
-          'radial-gradient(ellipse at 25% 15%, rgba(196,104,122,0.18) 0%, transparent 55%),' +
-          'radial-gradient(ellipse at 75% 85%, rgba(74,114,184,0.15) 0%, transparent 55%),' +
-          'radial-gradient(ellipse at 50% 50%, rgba(80,30,50,0.08) 0%, transparent 70%),' +
-          '#0A0508',
+          'radial-gradient(ellipse at 18% 12%, rgba(255,80,140,0.22) 0%, transparent 50%),' +
+          'radial-gradient(ellipse at 82% 85%, rgba(60,150,255,0.22) 0%, transparent 50%),' +
+          'radial-gradient(ellipse at 76% 18%, rgba(185,60,255,0.17) 0%, transparent 50%),' +
+          'radial-gradient(ellipse at 28% 80%, rgba(255,185,50,0.16) 0%, transparent 50%),' +
+          '#FFF8FA',
       }}
     >
       <div className="flex-1 flex flex-col px-5 py-12 max-w-lg mx-auto w-full">
@@ -171,29 +173,16 @@ export default function Home({ onSelectGame }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <motion.div
-            className="text-5xl mb-5"
-            initial={{ scale: 0, rotate: -20 }}
+          <motion.img
+            src="/logo.png"
+            alt="Elfa"
+            className="mx-auto mb-4"
+            style={{ width: 220, height: 'auto', filter: 'drop-shadow(0 4px 28px rgba(217,64,120,0.30)) drop-shadow(0 2px 8px rgba(100,60,180,0.20))' }}
+            initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
-            style={{ filter: 'drop-shadow(0 0 20px rgba(255,220,100,0.6))' }}
-          >
-            ✨
-          </motion.div>
-
-          <h1
-            className="font-serif mb-3"
-            style={{
-              color: '#F5EDE8',
-              fontSize: '3.5rem',
-              lineHeight: 1,
-              letterSpacing: '-0.02em',
-              textShadow: '0 0 60px rgba(196,104,122,0.3)',
-            }}
-          >
-            Kindred
-          </h1>
-          <p style={{ color: 'rgba(200,175,165,0.7)', fontSize: '0.95rem', letterSpacing: '0.06em' }}>
+          />
+          <p style={{ color: 'rgba(110,80,160,0.55)', fontSize: '0.85rem', letterSpacing: '0.1em', fontWeight: 600 }}>
             GAMES THAT BRING YOU CLOSER
           </p>
         </motion.div>
@@ -280,7 +269,7 @@ export default function Home({ onSelectGame }) {
         {/* Footer */}
         <motion.p
           className="text-center text-xs mt-10"
-          style={{ color: 'rgba(180,150,140,0.3)', letterSpacing: '0.05em' }}
+          style={{ color: 'rgba(110,80,160,0.35)', letterSpacing: '0.06em' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { TOPICS, TOPIC_ORDER, QUICK_FILTERS } from '../data/questions.js'
+import { theme } from '../theme.js'
 
 const containerVariants = {
   hidden: {},
@@ -34,7 +35,7 @@ export default function TopicSelection({
         <motion.button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-medium mb-6"
-          style={{ color: '#9B7B6B' }}
+          style={{ color: theme.app.textSub }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
@@ -55,13 +56,13 @@ export default function TopicSelection({
         <div className="text-4xl mb-3">💕</div>
         <h1
           className="font-serif text-4xl mb-2"
-          style={{ color: '#3D2C2C' }}
+          style={{ color: theme.app.text }}
         >
           Let's Get Closer
         </h1>
         <p
           className="text-base"
-          style={{ color: '#9B7B6B' }}
+          style={{ color: theme.app.textSub }}
         >
           Choose the topics you'd like to explore together
         </p>
@@ -80,11 +81,11 @@ export default function TopicSelection({
             onClick={() => applyFilter(filter.topicIds)}
             className="px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors"
             style={{
-              borderColor: '#E8D5C4',
+              borderColor: theme.app.borderStrong,
               backgroundColor: 'white',
-              color: '#7A5A4A',
+              color: theme.app.textSub,
             }}
-            whileHover={{ scale: 1.04, backgroundColor: '#FFF5EE' }}
+            whileHover={{ scale: 1.04, backgroundColor: theme.app.accentLight }}
             whileTap={{ scale: 0.97 }}
           >
             {filter.icon} {filter.label}
@@ -103,20 +104,20 @@ export default function TopicSelection({
           <button
             onClick={selectAll}
             className="text-sm font-medium underline"
-            style={{ color: '#9B7B6B' }}
+            style={{ color: theme.app.textMuted }}
           >
             Select All
           </button>
           <button
             onClick={deselectAll}
             className="text-sm font-medium underline"
-            style={{ color: '#9B7B6B' }}
+            style={{ color: theme.app.textMuted }}
           >
             Deselect All
           </button>
         </div>
-        <span className="text-sm" style={{ color: '#9B7B6B' }}>
-          <span className="font-semibold" style={{ color: '#3D2C2C' }}>{totalQuestionsSelected}</span> questions selected
+        <span className="text-sm" style={{ color: theme.app.textMuted }}>
+          <span className="font-semibold" style={{ color: theme.app.text }}>{totalQuestionsSelected}</span> questions selected
         </span>
       </motion.div>
 
@@ -140,10 +141,10 @@ export default function TopicSelection({
                 background: isSelected
                   ? `linear-gradient(135deg, ${topic.color}50 0%, ${topic.color}25 100%)`
                   : 'white',
-                border: `2px solid ${isSelected ? topic.color : '#F0EDE8'}`,
+                border: `2px solid ${isSelected ? topic.color : theme.app.border}`,
                 boxShadow: isSelected
-                  ? `0 4px 16px ${topic.color}40`
-                  : '0 1px 4px rgba(180,120,80,0.06)',
+                  ? `0 4px 20px ${topic.color}45`
+                  : '0 1px 4px rgba(100,60,80,0.06)',
                 transition: 'background 0.2s, border-color 0.2s, box-shadow 0.2s',
               }}
               whileHover={{ scale: 1.02, y: -2 }}
@@ -154,7 +155,7 @@ export default function TopicSelection({
               <div
                 className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center border-2"
                 style={{
-                  borderColor: isSelected ? topic.colorDark : '#D0C4BC',
+                  borderColor: isSelected ? topic.colorDark : 'rgba(120,90,160,0.25)',
                   backgroundColor: isSelected ? topic.color : 'transparent',
                 }}
               >
@@ -176,20 +177,20 @@ export default function TopicSelection({
               {/* Name */}
               <div
                 className="font-semibold text-sm mb-0.5"
-                style={{ color: isSelected ? topic.colorText : '#3D2C2C' }}
+                style={{ color: isSelected ? topic.colorText : theme.app.text }}
               >
                 {topic.name}
               </div>
 
               {/* Description */}
-              <div className="text-xs" style={{ color: '#9B7B6B' }}>
+              <div className="text-xs" style={{ color: theme.app.textSub }}>
                 {topic.description}
               </div>
 
               {/* Question count */}
               <div
                 className="text-xs mt-1 font-medium"
-                style={{ color: isSelected ? topic.colorDark : '#BBA898' }}
+                style={{ color: isSelected ? topic.colorDark : theme.app.textMuted }}
               >
                 {topic.questions.length} questions
               </div>
@@ -211,13 +212,13 @@ export default function TopicSelection({
           className="w-full py-4 rounded-2xl font-semibold text-lg transition-all"
           style={{
             background: canStart
-              ? 'linear-gradient(135deg, #C4687A 0%, #A04060 100%)'
-              : '#E8D5C4',
-            color: canStart ? 'white' : '#BBA898',
-            boxShadow: canStart ? '0 8px 24px rgba(196, 104, 122, 0.35)' : 'none',
+              ? `linear-gradient(135deg, ${theme.app.accentBright} 0%, ${theme.app.accent} 100%)`
+              : 'rgba(120,90,150,0.1)',
+            color: canStart ? 'white' : theme.app.textMuted,
+            boxShadow: canStart ? theme.app.accentGlow : 'none',
             cursor: canStart ? 'pointer' : 'not-allowed',
           }}
-          whileHover={canStart ? { scale: 1.02, boxShadow: '0 12px 32px rgba(196, 104, 122, 0.45)' } : {}}
+          whileHover={canStart ? { scale: 1.02, boxShadow: '0 14px 36px rgba(217,64,120,0.50)' } : {}}
           whileTap={canStart ? { scale: 0.98 } : {}}
         >
           {canStart ? `Start Drawing · ${totalQuestionsSelected} cards` : 'Select at least one topic'}
@@ -249,25 +250,25 @@ export default function TopicSelection({
               <div className="text-3xl mb-4 text-center">✨</div>
               <h2
                 className="font-serif text-2xl text-center mb-2"
-                style={{ color: '#3D2C2C' }}
+                style={{ color: theme.app.text }}
               >
                 Welcome back!
               </h2>
-              <p className="text-center text-sm mb-6" style={{ color: '#9B7B6B' }}>
+              <p className="text-center text-sm mb-6" style={{ color: theme.app.textSub }}>
                 You have an unfinished game. Would you like to continue where you left off?
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={dismissResume}
                   className="flex-1 py-3 rounded-xl font-medium text-sm border-2"
-                  style={{ borderColor: '#E8D5C4', color: '#9B7B6B' }}
+                  style={{ borderColor: theme.app.border, color: theme.app.textSub }}
                 >
                   Start Fresh
                 </button>
                 <motion.button
                   onClick={resumeGame}
                   className="flex-1 py-3 rounded-xl font-medium text-sm text-white"
-                  style={{ background: 'linear-gradient(135deg, #C4687A 0%, #A04060 100%)' }}
+                  style={{ background: `linear-gradient(135deg, ${theme.app.accentBright} 0%, ${theme.app.accent} 100%)`, boxShadow: theme.app.accentGlow }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

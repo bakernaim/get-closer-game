@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import TopicIllustration from './TopicIllustration.jsx'
+import { theme } from '../theme.js'
 
 // Card back decorative SVG pattern
 function CardBackPattern() {
@@ -28,7 +29,7 @@ export default function Card({ card, isFlipped = false, variant = 'full' }) {
     // Mini card for history carousel — no flip animation, just show face
     return (
       <div
-        className="relative rounded-xl overflow-hidden flex-shrink-0"
+        className="relative rounded-xl overflow-hidden shrink-0"
         style={{
           width: '76px',
           height: '108px',
@@ -90,7 +91,7 @@ export default function Card({ card, isFlipped = false, variant = 'full' }) {
           style={{
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
-            background: 'linear-gradient(150deg, #F5E6D3 0%, #E8D5C4 50%, #DCC9B8 100%)',
+            background: theme.getCloser.cardBack,
           }}
         >
           <CardBackPattern />
@@ -121,7 +122,7 @@ export default function Card({ card, isFlipped = false, variant = 'full' }) {
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
             background: card
-              ? `linear-gradient(150deg, ${card.topicColor}55 0%, ${card.topicColor}28 60%, ${card.topicColorDark}18 100%)`
+              ? `linear-gradient(150deg, ${card.topicColor}88 0%, ${card.topicColor}44 55%, ${card.topicColorDark}22 100%), ${theme.getCloser.cardFront}`
               : '#F5EDE8',
           }}
         >

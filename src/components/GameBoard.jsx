@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { theme } from '../theme.js'
 import Card from './Card.jsx'
 import DeckStack from './DeckStack.jsx'
 import CardHistory from './CardHistory.jsx'
@@ -40,7 +41,7 @@ function TopicPicker({ activeTopics, topicDecks, onSelect, onClose }) {
       {/* Backdrop */}
       <motion.div
         className="absolute inset-0 backdrop-blur-sm"
-        style={{ backgroundColor: 'rgba(61,44,44,0.3)' }}
+        style={{ backgroundColor: 'rgba(40,24,60,0.25)' }}
         onClick={onClose}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -56,16 +57,16 @@ function TopicPicker({ activeTopics, topicDecks, onSelect, onClose }) {
         transition={{ type: 'spring', stiffness: 320, damping: 32 }}
       >
         {/* Drag handle */}
-        <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: '#E0D8D0' }} />
+        <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ backgroundColor: theme.app.border }} />
 
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-xl" style={{ color: '#3D2C2C' }}>
+          <h2 className="font-serif text-xl" style={{ color: theme.app.text }}>
             Pick a category
           </h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: '#F0EDE8', color: '#9B7B6B' }}
+            style={{ backgroundColor: theme.app.pill, color: theme.app.textSub }}
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -89,8 +90,8 @@ function TopicPicker({ activeTopics, topicDecks, onSelect, onClose }) {
                   background: isEmpty
                     ? '#F5F3F0'
                     : `linear-gradient(135deg, ${topic.color}50 0%, ${topic.color}25 100%)`,
-                  border: `1.5px solid ${isEmpty ? '#E8E4E0' : topic.color + '60'}`,
-                  opacity: isEmpty ? 0.45 : 1,
+                  border: `1.5px solid ${isEmpty ? '#E8E4E0' : topic.color + '80'}`,
+                  opacity: isEmpty ? 0.4 : 1,
                   cursor: isEmpty ? 'not-allowed' : 'pointer',
                 }}
                 initial={{ opacity: 0, y: 12 }}
@@ -107,7 +108,7 @@ function TopicPicker({ activeTopics, topicDecks, onSelect, onClose }) {
                 <div className="text-xl mb-1.5">{topic.icon}</div>
                 <div
                   className="font-semibold text-sm leading-tight mb-1"
-                  style={{ color: isEmpty ? '#BBA898' : '#3D2C2C' }}
+                  style={{ color: isEmpty ? '#BBA898' : theme.app.text }}
                 >
                   {topic.name}
                 </div>
@@ -194,17 +195,17 @@ export default function GameBoard({
   const hasAnyRemaining = totalRemaining > 0
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FAF8F5' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'transparent' }}>
       {/* Header */}
       <div
         className="px-4 pt-5 pb-3 flex items-start justify-between gap-3"
-        style={{ borderBottom: '1px solid rgba(180,120,80,0.08)' }}
+        style={{ borderBottom: `1px solid ${theme.app.border}` }}
       >
         <div className="flex flex-col gap-2 flex-1 min-w-0">
           <button
             onClick={() => gotoScreen('topics')}
             className="flex items-center gap-1.5 text-sm font-medium w-fit"
-            style={{ color: '#9B7B6B' }}
+            style={{ color: theme.app.textSub }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -221,7 +222,7 @@ export default function GameBoard({
                   key={id}
                   className="px-2 py-0.5 rounded-full text-xs font-medium"
                   style={{
-                    backgroundColor: isEmpty ? '#F0EDE8' : TOPICS[id].color + '40',
+                    backgroundColor: isEmpty ? '#F0EDE8' : TOPICS[id].color + '38',
                     color: isEmpty ? '#BBA898' : TOPICS[id].colorText,
                     textDecoration: isEmpty ? 'line-through' : 'none',
                   }}
@@ -231,23 +232,23 @@ export default function GameBoard({
               )
             })}
             {activeTopics.length > 5 && (
-              <div className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#F0EDE8', color: '#9B7B6B' }}>
+              <div className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: theme.app.pill, color: theme.app.textSub }}>
                 +{activeTopics.length - 5}
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        <div className="flex flex-col items-end gap-2 shrink-0">
           <div className="text-sm font-medium">
-            <span className="font-semibold" style={{ color: '#C4687A' }}>{state.totalDrawn}</span>
-            <span style={{ color: '#9B7B6B' }}>/{totalInSession} drawn</span>
+            <span className="font-semibold" style={{ color: theme.app.accent }}>{state.totalDrawn}</span>
+            <span style={{ color: theme.app.textMuted }}>/{totalInSession} drawn</span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => gotoScreen('saved')}
               className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-xl"
-              style={{ backgroundColor: '#FFB3C620', color: '#C4687A' }}
+              style={{ backgroundColor: theme.app.accentLight, color: theme.app.accent }}
             >
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                 <path d="M6.5 11.5C6.5 11.5 1 8.2 1 4.5C1 2.8 2.3 1.5 4 1.5C5.1 1.5 5.9 2.1 6.5 2.8C7.1 2.1 7.9 1.5 9 1.5C10.7 1.5 12 2.8 12 4.5C12 8.2 6.5 11.5 6.5 11.5Z"
@@ -258,7 +259,7 @@ export default function GameBoard({
             <button
               onClick={toggleStats}
               className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-xl"
-              style={{ backgroundColor: '#F0EDE8', color: '#9B7B6B' }}
+              style={{ backgroundColor: theme.app.pill, color: theme.app.textSub }}
             >
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
                 <rect x="1" y="7" width="3" height="5" rx="1" fill="currentColor" />
@@ -312,7 +313,7 @@ export default function GameBoard({
                       height: '420px',
                       background: 'linear-gradient(150deg, #F5E6D3 0%, #E8D5C4 50%, #DCC9B8 100%)',
                     }}
-                    whileHover={{ scale: 1.02, y: -4 }}
+                    whileHover={{ scale: 1.02, y: -6, boxShadow: '0 32px 80px rgba(0,0,0,0.55)' }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleDrawClick}
                   >
@@ -335,14 +336,14 @@ export default function GameBoard({
               transition={{ type: 'spring', stiffness: 200, damping: 20 }}
             >
               <div className="text-5xl mb-4">✨</div>
-              <h2 className="font-serif text-3xl mb-2" style={{ color: '#C4687A' }}>All done!</h2>
-              <p className="text-sm mb-6" style={{ color: '#9B7B6B' }}>
+              <h2 className="font-serif text-3xl mb-2" style={{ color: theme.app.accent }}>All done!</h2>
+              <p className="text-sm mb-6" style={{ color: theme.app.textSub }}>
                 You drew {state.totalDrawn} card{state.totalDrawn !== 1 ? 's' : ''} together
               </p>
               <motion.button
                 onClick={() => gotoScreen('topics')}
                 className="px-8 py-3 rounded-2xl text-white font-semibold"
-                style={{ background: 'linear-gradient(135deg, #C4687A 0%, #A04060 100%)' }}
+                style={{ background: `linear-gradient(135deg, ${theme.app.accentBright} 0%, ${theme.app.accent} 100%)`, boxShadow: theme.app.accentGlow }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
               >
@@ -366,10 +367,10 @@ export default function GameBoard({
               disabled={!state.currentCard}
               className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl"
               style={{
-                backgroundColor: state.currentCard ? '#F0EDE8' : '#F8F6F3',
-                color: state.currentCard ? '#9B7B6B' : '#C8BAB2',
+                backgroundColor: state.currentCard ? theme.app.pill : 'rgba(120,90,160,0.05)',
+                color: state.currentCard ? theme.app.textSub : theme.app.textMuted,
               }}
-              whileHover={state.currentCard ? { scale: 1.04, backgroundColor: '#E8E0D8' } : {}}
+              whileHover={state.currentCard ? { scale: 1.04, backgroundColor: 'rgba(120,90,160,0.14)' } : {}}
               whileTap={state.currentCard ? { scale: 0.97 } : {}}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -385,12 +386,10 @@ export default function GameBoard({
               className="flex flex-col items-center gap-1 px-8 py-3.5 rounded-2xl font-semibold"
               style={{
                 background: hasAnyRemaining
-                  ? 'linear-gradient(135deg, #C4687A 0%, #A04060 100%)'
-                  : '#E8D5C4',
-                color: hasAnyRemaining ? 'white' : '#BBA898',
-                boxShadow: hasAnyRemaining
-                  ? '0 8px 24px rgba(196,104,122,0.30)'
-                  : 'none',
+                  ? `linear-gradient(135deg, ${theme.app.accentBright} 0%, ${theme.app.accent} 100%)`
+                  : 'rgba(120,90,160,0.08)',
+                color: hasAnyRemaining ? 'white' : theme.app.textMuted,
+                boxShadow: hasAnyRemaining ? theme.app.accentGlow : 'none',
               }}
               whileHover={hasAnyRemaining ? { scale: 1.04, y: -2 } : {}}
               whileTap={hasAnyRemaining ? { scale: 0.97 } : {}}
@@ -411,8 +410,8 @@ export default function GameBoard({
               disabled={!state.currentCard}
               className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl"
               style={{
-                backgroundColor: isCurrentSaved ? '#FFB3C625' : (state.currentCard ? '#F0EDE8' : '#F8F6F3'),
-                color: isCurrentSaved ? '#C4687A' : (state.currentCard ? '#9B7B6B' : '#C8BAB2'),
+                backgroundColor: isCurrentSaved ? theme.app.accentLight : (state.currentCard ? theme.app.pill : 'rgba(120,90,160,0.05)'),
+                color: isCurrentSaved ? theme.app.accent : (state.currentCard ? theme.app.textSub : theme.app.textMuted),
               }}
               whileHover={state.currentCard ? { scale: 1.04 } : {}}
               whileTap={state.currentCard ? { scale: 0.97 } : {}}
