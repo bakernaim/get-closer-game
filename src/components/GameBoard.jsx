@@ -139,6 +139,9 @@ export default function GameBoard({
   stats,
   toggleStats,
   totalRemaining,
+  isRemote = false,
+  isMyTurn = true,
+  partnerName = 'Partner',
 }) {
   const [exitDirection, setExitDirection] = useState('right')
   const [cardFlipped, setCardFlipped] = useState(false)
@@ -161,7 +164,10 @@ export default function GameBoard({
     }
   }, [state.activeMilestone])
 
+  const canInteract = !isRemote || isMyTurn
+
   const handleDrawClick = () => {
+    if (!canInteract) return
     setShowTopicPicker(true)
   }
 
@@ -172,6 +178,7 @@ export default function GameBoard({
   }
 
   const handleSkip = () => {
+    if (!canInteract) return
     setExitDirection('left')
     skipCard()
   }
@@ -196,6 +203,35 @@ export default function GameBoard({
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'transparent' }}>
+      {/* Remote turn indicator */}
+      {isRemote && (
+        <motion.div
+          className="px-4 pt-3 pb-0"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div
+            className="flex items-center gap-2 rounded-2xl px-4 py-2.5"
+            style={{
+              backgroundColor: isMyTurn
+                ? 'rgba(80,200,120,0.1)'
+                : 'rgba(200,60,160,0.07)',
+              border: `1px solid ${isMyTurn ? 'rgba(80,200,120,0.25)' : 'rgba(200,60,160,0.15)'}`,
+            }}
+          >
+            <motion.div
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: isMyTurn ? '#40C070' : '#C040A0' }}
+              animate={isMyTurn ? {} : { opacity: [1, 0.4, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            />
+            <span className="text-xs font-semibold" style={{ color: isMyTurn ? '#2B8050' : '#803060' }}>
+              {isMyTurn ? 'Your turn — choose a card' : `${partnerName} is choosing...`}
+            </span>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div
         className="px-4 pt-5 pb-3 flex items-start justify-between gap-3"
@@ -361,17 +397,17 @@ export default function GameBoard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {/* Skip — only visible when a card is showing */}
+            {/* Skip — only visible when a card is showing and it's your turn */}
             <motion.button
               onClick={handleSkip}
-              disabled={!state.currentCard}
+              disabled={!state.currentCard || !canInteract}
               className="flex flex-col items-center gap-1 px-5 py-3 rounded-2xl"
               style={{
-                backgroundColor: state.currentCard ? theme.app.pill : 'rgba(120,90,160,0.05)',
-                color: state.currentCard ? theme.app.textSub : theme.app.textMuted,
+                backgroundColor: state.currentCard && canInteract ? theme.app.pill : 'rgba(120,90,160,0.05)',
+                color: state.currentCard && canInteract ? theme.app.textSub : theme.app.textMuted,
               }}
-              whileHover={state.currentCard ? { scale: 1.04, backgroundColor: 'rgba(120,90,160,0.14)' } : {}}
-              whileTap={state.currentCard ? { scale: 0.97 } : {}}
+              whileHover={state.currentCard && canInteract ? { scale: 1.04, backgroundColor: 'rgba(120,90,160,0.14)' } : {}}
+              whileTap={state.currentCard && canInteract ? { scale: 0.97 } : {}}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M5 10H15M15 10L11 6M15 10L11 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -382,17 +418,17 @@ export default function GameBoard({
             {/* Draw / Choose Category — main CTA */}
             <motion.button
               onClick={handleDrawClick}
-              disabled={!hasAnyRemaining}
+              disabled={!hasAnyRemaining || !canInteract}
               className="flex flex-col items-center gap-1 px-8 py-3.5 rounded-2xl font-semibold"
               style={{
-                background: hasAnyRemaining
+                background: hasAnyRemaining && canInteract
                   ? `linear-gradient(135deg, ${theme.app.accentBright} 0%, ${theme.app.accent} 100%)`
                   : 'rgba(120,90,160,0.08)',
-                color: hasAnyRemaining ? 'white' : theme.app.textMuted,
-                boxShadow: hasAnyRemaining ? theme.app.accentGlow : 'none',
+                color: hasAnyRemaining && canInteract ? 'white' : theme.app.textMuted,
+                boxShadow: hasAnyRemaining && canInteract ? theme.app.accentGlow : 'none',
               }}
-              whileHover={hasAnyRemaining ? { scale: 1.04, y: -2 } : {}}
-              whileTap={hasAnyRemaining ? { scale: 0.97 } : {}}
+              whileHover={hasAnyRemaining && canInteract ? { scale: 1.04, y: -2 } : {}}
+              whileTap={hasAnyRemaining && canInteract ? { scale: 0.97 } : {}}
             >
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <rect x="3" y="4" width="14" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
