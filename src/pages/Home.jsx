@@ -153,10 +153,10 @@ const GAMES = [
   },
 ]
 
-export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcceptInvite, onDeclineInvite }) {
-  // onPlayOnline(gameType) — called with 'card' | 'connect4' | 'dama'
+export default function Home({ onSelectGame, onPlayOnline, onSignIn, pendingInvite, onAcceptInvite, onDeclineInvite }) {
   const { profile, signOut } = useAuth()
   const [showSignOut, setShowSignOut] = useState(false)
+  const isGuest = !profile
 
   return (
     <div
@@ -172,9 +172,9 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
     >
       <div className="flex-1 flex flex-col px-5 py-12 max-w-lg mx-auto w-full">
 
-        {/* Pending invite banner */}
+        {/* Pending invite banner — logged-in users only */}
         <AnimatePresence>
-          {pendingInvite && (
+          {!isGuest && pendingInvite && (
             <motion.div
               initial={{ opacity: 0, y: -16, height: 0 }}
               animate={{ opacity: 1, y: 0, height: 'auto' }}
@@ -224,7 +224,7 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
 
         {/* Header */}
         <motion.div
-          className="text-center mb-10"
+          className="text-center mb-8"
           initial={{ opacity: 0, y: -24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -232,8 +232,8 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
           <motion.img
             src="/logo.png"
             alt="Elfa"
-            className="mx-auto mb-4"
-            style={{ width: 220, height: 'auto', filter: 'drop-shadow(0 4px 28px rgba(217,64,120,0.30)) drop-shadow(0 2px 8px rgba(100,60,180,0.20))' }}
+            className="mx-auto mb-3"
+            style={{ width: isGuest ? 180 : 220, height: 'auto', filter: 'drop-shadow(0 4px 28px rgba(217,64,120,0.30)) drop-shadow(0 2px 8px rgba(100,60,180,0.20))' }}
             initial={{ scale: 0, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
@@ -242,8 +242,52 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
             GAMES THAT BRING YOU CLOSER
           </p>
 
-          {/* Profile pill */}
-          {profile && (
+          {/* ── Guest: landing hero ────────────────────────────── */}
+          {isGuest && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.5 }}
+            >
+              <p
+                className="mt-3 mb-6 leading-relaxed"
+                style={{ color: 'rgba(80,55,130,0.6)', fontSize: '0.95rem', maxWidth: '28ch', margin: '12px auto 24px' }}
+              >
+                Play meaningful games with your partner — on one device or from anywhere in the world.
+              </p>
+
+              <div className="flex items-center justify-center gap-3">
+                <motion.button
+                  onClick={onSignIn}
+                  className="px-6 py-3 rounded-2xl font-semibold text-white text-sm"
+                  style={{
+                    background: 'linear-gradient(135deg, #F06080 0%, #C040A0 100%)',
+                    boxShadow: '0 4px 20px rgba(200,60,160,0.35)',
+                  }}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  Create Free Account
+                </motion.button>
+                <motion.button
+                  onClick={onSignIn}
+                  className="px-5 py-3 rounded-2xl font-semibold text-sm"
+                  style={{
+                    backgroundColor: 'rgba(200,60,160,0.08)',
+                    color: '#C040A0',
+                    border: '1.5px solid rgba(200,60,160,0.2)',
+                  }}
+                  whileHover={{ scale: 1.04, backgroundColor: 'rgba(200,60,160,0.13)' }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  Sign In
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Logged-in: profile pill ────────────────────────── */}
+          {!isGuest && (
             <motion.div
               className="flex items-center justify-center mt-4"
               initial={{ opacity: 0 }}
@@ -254,10 +298,7 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
                 <button
                   onClick={() => setShowSignOut((v) => !v)}
                   className="flex items-center gap-2 px-4 py-2 rounded-full"
-                  style={{
-                    backgroundColor: 'rgba(200,60,160,0.08)',
-                    border: '1px solid rgba(200,60,160,0.18)',
-                  }}
+                  style={{ backgroundColor: 'rgba(200,60,160,0.08)', border: '1px solid rgba(200,60,160,0.18)' }}
                 >
                   <span
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
@@ -265,9 +306,7 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
                   >
                     {profile.username?.[0]?.toUpperCase()}
                   </span>
-                  <span className="text-sm font-semibold" style={{ color: '#3D2B6B' }}>
-                    {profile.username}
-                  </span>
+                  <span className="text-sm font-semibold" style={{ color: '#3D2B6B' }}>{profile.username}</span>
                   <span
                     className="text-xs font-medium px-2 py-0.5 rounded-full"
                     style={{ backgroundColor: 'rgba(200,60,160,0.15)', color: '#C040A0' }}
@@ -305,6 +344,48 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
             </motion.div>
           )}
         </motion.div>
+
+        {/* Online play banner — guests only */}
+        {isGuest && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.45 }}
+            className="mb-5"
+          >
+            <div
+              className="flex items-center gap-4 rounded-2xl px-5 py-4"
+              style={{
+                background: 'linear-gradient(135deg, rgba(240,96,128,0.12) 0%, rgba(192,64,160,0.10) 100%)',
+                border: '1.5px solid rgba(200,60,160,0.22)',
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-lg"
+                style={{ backgroundColor: 'rgba(200,60,160,0.12)' }}
+              >
+                🌐
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm" style={{ color: '#3D2B6B' }}>
+                  Play with your partner online
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(100,80,140,0.55)' }}>
+                  Sign in for free to invite and play from separate devices
+                </p>
+              </div>
+              <motion.button
+                onClick={onSignIn}
+                className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold text-white"
+                style={{ background: 'linear-gradient(135deg, #F06080 0%, #C040A0 100%)', whiteSpace: 'nowrap' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                Sign In
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Game Cards */}
         <div className="flex flex-col gap-4 flex-1">
@@ -389,7 +470,7 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
                       whileHover={{ scale: 1.06, backgroundColor: 'rgba(255,255,255,0.18)' }}
                       whileTap={{ scale: 0.96 }}
                     >
-                      🌐 Online
+                      {isGuest ? '🔒 Online' : '🌐 Online'}
                     </motion.button>
                   </div>
                 </div>

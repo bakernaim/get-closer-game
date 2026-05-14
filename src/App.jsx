@@ -6,8 +6,8 @@ import { useRemoteGame } from './hooks/useRemoteGame.js'
 import { useRemoteConnect4 } from './hooks/useRemoteConnect4.js'
 import { useRemoteDama } from './hooks/useRemoteDama.js'
 import { supabase } from './lib/supabase'
-import AuthPage from './pages/AuthPage.jsx'
 import Home from './pages/Home.jsx'
+import AuthModal from './components/AuthModal.jsx'
 import TopicSelection from './components/TopicSelection.jsx'
 import GameBoard from './components/GameBoard.jsx'
 import SavedCards from './components/SavedCards.jsx'
@@ -34,6 +34,18 @@ export default function App() {
   const [pendingInvite, setPendingInvite] = useState(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteGameType, setInviteGameType] = useState('card')
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [pendingOnlineGame, setPendingOnlineGame] = useState(null)
+
+  // After login, auto-open invite modal if user was trying to play online
+  useEffect(() => {
+    if (user && pendingOnlineGame) {
+      setInviteGameType(pendingOnlineGame)
+      setPendingOnlineGame(null)
+      setShowAuthModal(false)
+      setShowInviteModal(true)
+    }
+  }, [user])
 
   const remoteGame      = useRemoteGame(remoteSessionId, user?.id)
   const remoteConnect4  = useRemoteConnect4(remoteSessionId, user?.id)
@@ -115,21 +127,15 @@ export default function App() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFF8FA' }}>
-        <motion.div
-          animate={{ opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 1.6, repeat: Infinity }}
-          style={{ color: 'rgba(200,60,160,0.5)', fontSize: '1.5rem' }}
-        >
-          💕
-        </motion.div>
-      </div>
-    )
+  function handlePlayOnline(gameType) {
+    if (!user) {
+      setPendingOnlineGame(gameType)
+      setShowAuthModal(true)
+    } else {
+      setInviteGameType(gameType)
+      setShowInviteModal(true)
+    }
   }
-
-  if (!user) return <AuthPage />
 
   const { session: rs } = remoteGame
 
@@ -142,7 +148,8 @@ export default function App() {
           <motion.div key="home" {...screenVariants} className="min-h-screen">
             <Home
               onSelectGame={handleSelectGame}
-              onPlayOnline={(gameType) => { setInviteGameType(gameType); setShowInviteModal(true) }}
+              onPlayOnline={handlePlayOnline}
+              onSignIn={() => setShowAuthModal(true)}
               pendingInvite={pendingInvite}
               onAcceptInvite={handleAcceptInvite}
               onDeclineInvite={() => setPendingInvite(null)}
@@ -250,15 +257,25 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Invite modal (shown from Home) */}
+      {/* Invite modal */}
       <AnimatePresence>
-        {showInviteModal && (
+        {showInviteModal && user && (
           <InviteModal
             user={user}
             profile={profile}
             gameType={inviteGameType}
             onCreated={handleInviteCreated}
             onClose={() => setShowInviteModal(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Auth modal (shown when guest tries to play online) */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <AuthModal
+            reason="online"
+            onClose={() => { setShowAuthModal(false); setPendingOnlineGame(null) }}
           />
         )}
       </AnimatePresence>
