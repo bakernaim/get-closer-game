@@ -154,6 +154,7 @@ const GAMES = [
 ]
 
 export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcceptInvite, onDeclineInvite }) {
+  // onPlayOnline(gameType) — called with 'card' | 'connect4' | 'dama'
   const { profile, signOut } = useAuth()
   const [showSignOut, setShowSignOut] = useState(false)
 
@@ -194,7 +195,7 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
                       You have a game invite!
                     </p>
                     <p className="text-xs" style={{ color: 'rgba(100,80,140,0.55)' }}>
-                      Someone wants to play Let's Get Closer
+                      {pendingInvite?.game_type === 'connect4' ? 'Connect 4' : pendingInvite?.game_type === 'dama' ? 'Dama' : "Let's Get Closer"} — online
                     </p>
                   </div>
                 </div>
@@ -313,16 +314,12 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
               initial={{ opacity: 0, y: 32 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.2 + i * 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
-              onClick={() => game.id !== 'getCloser' && onSelectGame(game.id)}
               className="relative overflow-hidden rounded-3xl select-none"
               style={{
                 background: game.bg,
                 boxShadow: `0 4px 32px ${game.glow}, inset 0 1px 0 rgba(255,255,255,0.07)`,
                 border: '1px solid rgba(255,255,255,0.07)',
-                cursor: game.id !== 'getCloser' ? 'pointer' : 'default',
               }}
-              whileHover={game.id !== 'getCloser' ? { scale: 1.025, y: -4, boxShadow: `0 12px 48px ${game.glow}, inset 0 1px 0 rgba(255,255,255,0.10)` } : {}}
-              whileTap={game.id !== 'getCloser' ? { scale: 0.98 } : {}}
               transition={{ type: 'spring', stiffness: 340, damping: 28 }}
             >
               {/* Ambient glow blob inside card */}
@@ -366,49 +363,35 @@ export default function Home({ onSelectGame, onPlayOnline, pendingInvite, onAcce
                 </div>
 
                 {/* Right: decoration + button(s) */}
-                <div className="flex flex-col items-center gap-3 flex-shrink-0">
+                <div className="flex flex-col items-center gap-3 shrink-0">
                   <div className="opacity-80">{game.decoration}</div>
 
-                  {game.id === 'getCloser' ? (
-                    /* Two play buttons for the card game */
-                    <div className="flex flex-col gap-2">
-                      <motion.button
-                        onClick={(e) => { e.stopPropagation(); onSelectGame('getCloser') }}
-                        className="flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold text-white gap-1.5"
-                        style={{ background: game.btnBg, boxShadow: game.btnShadow, whiteSpace: 'nowrap' }}
-                        whileHover={{ scale: 1.06 }}
-                        whileTap={{ scale: 0.96 }}
-                      >
-                        Together
-                      </motion.button>
-                      <motion.button
-                        onClick={(e) => { e.stopPropagation(); onPlayOnline() }}
-                        className="flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold gap-1.5"
-                        style={{
-                          backgroundColor: 'rgba(255,255,255,0.12)',
-                          color: 'rgba(255,240,245,0.9)',
-                          border: '1px solid rgba(255,255,255,0.2)',
-                          whiteSpace: 'nowrap',
-                        }}
-                        whileHover={{ scale: 1.06, backgroundColor: 'rgba(255,255,255,0.18)' }}
-                        whileTap={{ scale: 0.96 }}
-                      >
-                        🌐 Online
-                      </motion.button>
-                    </div>
-                  ) : (
-                    <motion.div
-                      className="flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold text-white gap-2"
+                  {/* All games: local play + online play */}
+                  <div className="flex flex-col gap-2">
+                    <motion.button
+                      onClick={(e) => { e.stopPropagation(); onSelectGame(game.id) }}
+                      className="flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold text-white gap-1.5"
                       style={{ background: game.btnBg, boxShadow: game.btnShadow, whiteSpace: 'nowrap' }}
                       whileHover={{ scale: 1.06 }}
                       whileTap={{ scale: 0.96 }}
                     >
-                      Play
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2 7H12M12 7L7.5 2.5M12 7L7.5 11.5" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </motion.div>
-                  )}
+                      {game.id === 'getCloser' ? 'Together' : 'Local'}
+                    </motion.button>
+                    <motion.button
+                      onClick={(e) => { e.stopPropagation(); onPlayOnline(game.id) }}
+                      className="flex items-center justify-center rounded-2xl px-4 py-2 text-xs font-semibold gap-1.5"
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.12)',
+                        color: 'rgba(255,240,245,0.9)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        whiteSpace: 'nowrap',
+                      }}
+                      whileHover={{ scale: 1.06, backgroundColor: 'rgba(255,255,255,0.18)' }}
+                      whileTap={{ scale: 0.96 }}
+                    >
+                      🌐 Online
+                    </motion.button>
+                  </div>
                 </div>
               </div>
             </motion.div>

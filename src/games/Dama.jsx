@@ -299,7 +299,8 @@ function WinParticles({ color }) {
 }
 
 // ─── Win Overlay ──────────────────────────────────────────────────────────────
-function WinOverlay({ winner, scores, onPlayAgain }) {
+function WinOverlay({ winner, scores, onPlayAgain, winnerLabel }) {
+  const name = winnerLabel ?? `Player ${winner}`
   return (
     <>
       <WinParticles color={P[winner].disc} />
@@ -334,7 +335,7 @@ function WinOverlay({ winner, scores, onPlayAgain }) {
             style={{ color: P[winner].disc, fontSize: '1.8rem', lineHeight: 1.1 }}
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
           >
-            Player {winner} Wins!
+            {name} Win{name === 'You' ? '!' : 's!'}
           </motion.h2>
           <motion.p className="text-sm mb-6"
             style={{ color: 'rgba(200,175,165,0.5)' }}
@@ -380,18 +381,54 @@ function WinOverlay({ winner, scores, onPlayAgain }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function Dama({ onBack }) {
-  const [board, setBoard]         = useState(createBoard)
-  const [turn, setTurn]           = useState(1)
-  const [sel, setSel]             = useState(null)   // [r,c]
-  const [moves, setMoves]         = useState([])
-  const [jumpPiece, setJumpPiece] = useState(null)   // [r,c] during multi-jump
-  const [skipCells, setSkipCells] = useState([])
-  const [winner, setWinner]       = useState(null)
-  const [scores, setScores]       = useState({ 1: 0, 2: 0 })
+export default function Dama({
+  onBack,
+  isRemote = false,
+  myPlayer = 1,
+  isMyTurn = true,
+  remoteBoard = null,
+  remoteTurn = 1,
+  remoteScores = null,
+  remoteWinner = null,
+  remoteJumpPiece = null,
+  remoteSkipCells = null,
+  onRemoteMove,
+  onPlayAgain,
+  partnerName = 'Partner',
+}) {
+  // Local state
+  const [localBoard, setLocalBoard]         = useState(createBoard)
+  const [localTurn, setLocalTurn]           = useState(1)
+  const [localJumpPiece, setLocalJumpPiece] = useState(null)
+  const [localSkipCells, setLocalSkipCells] = useState([])
+  const [localWinner, setLocalWinner]       = useState(null)
+  const [localScores, setLocalScores]       = useState({ 1: 0, 2: 0 })
+
+  // Unified state — remote takes precedence
+  const board     = isRemote ? (remoteBoard ?? createBoard()) : localBoard
+  const turn      = isRemote ? remoteTurn : localTurn
+  const jumpPiece = isRemote ? remoteJumpPiece : localJumpPiece
+  const skipCells = isRemote ? (remoteSkipCells ?? []) : localSkipCells
+  const winner    = isRemote ? remoteWinner : localWinner
+  const scores    = isRemote ? (remoteScores ?? { 1: 0, 2: 0 }) : localScores
+
+  // Always-local UI state
+  const [sel, setSel]     = useState(null)
+  const [moves, setMoves] = useState([])
+
+  // Clear selection when turn changes (remote player moved)
+  useEffect(() => {
+    setSel(null)
+    setMoves([])
+  }, [turn, jumpPiece])
 
   const isOver   = winner !== null
   const mustJump = jumpPiece != null || anyJumps(board, turn)
+
+  const playerLabel = (p) => {
+    if (!isRemote) return `Player ${p}`
+    return p === myPlayer ? 'You' : partnerName
+  }
 
   // Pieces the current player is forced to capture with
   const capturablePieces = useMemo(() => {
@@ -406,10 +443,15 @@ export default function Dama({ onBack }) {
 
   function handleClick(r, c) {
     if (isOver) return
+    if (isRemote && !isMyTurn) return
 
-    if (jumpPiece) {
+    const activeJump = jumpPiece
+    if (activeJump) {
       const m = moves.find(m => m.toR === r && m.toC === c)
-      if (m) doMove(jumpPiece[0], jumpPiece[1], m)
+      if (m) {
+        if (isRemote) { onRemoteMove?.(activeJump[0], activeJump[1], m); setSel(null); setMoves([]) }
+        else doLocalMove(activeJump[0], activeJump[1], m)
+      }
       return
     }
 
@@ -424,16 +466,20 @@ export default function Dama({ onBack }) {
 
     if (sel) {
       const m = moves.find(m => m.toR === r && m.toC === c)
-      if (m) { doMove(sel[0], sel[1], m); return }
+      if (m) {
+        if (isRemote) { onRemoteMove?.(sel[0], sel[1], m); setSel(null); setMoves([]) }
+        else doLocalMove(sel[0], sel[1], m)
+        return
+      }
     }
 
     setSel(null)
     setMoves([])
   }
 
-  function doMove(fr, fc, m) {
+  function doLocalMove(fr, fc, m) {
     const nb = applyMove(board, fr, fc, m.toR, m.toC, m.capR, m.capC)
-    setBoard(nb)
+    setLocalBoard(nb)
 
     const wasPromoted = (nb[m.toR][m.toC] === 3 && board[fr][fc] === 1) ||
                         (nb[m.toR][m.toC] === 4 && board[fr][fc] === 2)
@@ -441,14 +487,14 @@ export default function Dama({ onBack }) {
     if (m.capR != null) {
       playCapture()
       if (wasPromoted) playKing()
-      const newSkip = [...skipCells, [m.capR, m.capC]]
+      const newSkip = [...localSkipCells, [m.capR, m.capC]]
       if (!wasPromoted) {
         const more = jumpsFrom(nb, m.toR, m.toC, turn, newSkip)
         if (more.length > 0) {
           setSel([m.toR, m.toC])
-          setJumpPiece([m.toR, m.toC])
+          setLocalJumpPiece([m.toR, m.toC])
           setMoves(more)
-          setSkipCells(newSkip)
+          setLocalSkipCells(newSkip)
           return
         }
       }
@@ -456,24 +502,25 @@ export default function Dama({ onBack }) {
       playMove()
       if (wasPromoted) playKing()
     }
-    endTurn(nb)
+    endLocalTurn(nb)
   }
 
-  function endTurn(nb) {
-    setSel(null); setMoves([]); setJumpPiece(null); setSkipCells([])
+  function endLocalTurn(nb) {
+    setSel(null); setMoves([]); setLocalJumpPiece(null); setLocalSkipCells([])
     const next = turn === 1 ? 2 : 1
     if (!hasMoves(nb, next)) {
       playWin()
-      setWinner(turn)
-      setScores(s => ({ ...s, [turn]: s[turn] + 1 }))
+      setLocalWinner(turn)
+      setLocalScores(s => ({ ...s, [turn]: s[turn] + 1 }))
     } else {
-      setTurn(next)
+      setLocalTurn(next)
     }
   }
 
   function resetGame() {
-    setBoard(createBoard()); setTurn(1); setSel(null)
-    setMoves([]); setJumpPiece(null); setSkipCells([]); setWinner(null)
+    if (isRemote) { onPlayAgain?.(); return }
+    setLocalBoard(createBoard()); setLocalTurn(1); setSel(null)
+    setMoves([]); setLocalJumpPiece(null); setLocalSkipCells([]); setLocalWinner(null)
   }
 
   const isSelected  = (r, c) => sel && sel[0] === r && sel[1] === c
@@ -502,13 +549,15 @@ export default function Dama({ onBack }) {
           <p className="text-xs" style={{ color: theme.app.textMuted, letterSpacing: '0.05em' }}>TURKISH</p>
         </div>
 
-        <motion.button onClick={() => { resetGame(); setScores({ 1: 0, 2: 0 }) }}
-          className="text-xs font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
-          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }} whileTap={{ scale: 0.97 }}
-        >
-          Reset
-        </motion.button>
+        {!isRemote ? (
+          <motion.button onClick={() => { resetGame(); setLocalScores({ 1: 0, 2: 0 }) }}
+            className="text-xs font-medium px-3.5 py-2 rounded-xl"
+            style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+            whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }} whileTap={{ scale: 0.97 }}
+          >
+            Reset
+          </motion.button>
+        ) : <div style={{ width: 60 }} />}
       </div>
 
       <div className="flex-1 flex flex-col items-center px-3 py-2 gap-3">
@@ -553,7 +602,7 @@ export default function Dama({ onBack }) {
               transition={{ type: 'spring', stiffness: 350, damping: 24 }}
             >
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: P[turn].disc, boxShadow: `0 0 8px ${P[turn].glow}` }} />
-              {mustJump ? `Player ${turn} — must capture!` : `Player ${turn}'s turn`}
+              {mustJump ? `${playerLabel(turn)} — must capture!` : `${playerLabel(turn)}'s turn${isRemote && turn === myPlayer ? ' — tap a piece' : ''}`}
             </motion.div>
           )}
         </AnimatePresence>
@@ -676,7 +725,7 @@ export default function Dama({ onBack }) {
       </div>
 
       <AnimatePresence>
-        {isOver && <WinOverlay winner={winner} scores={scores} onPlayAgain={resetGame} />}
+        {isOver && <WinOverlay winner={winner} scores={scores} onPlayAgain={resetGame} winnerLabel={playerLabel(winner)} />}
       </AnimatePresence>
     </div>
   )

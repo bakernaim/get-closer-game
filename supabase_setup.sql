@@ -53,6 +53,9 @@ create table if not exists public.game_sessions (
   card_key        integer not null default 0,
   current_turn    text    not null default 'host'
                     check (current_turn in ('host', 'guest')),
+  game_type       text    not null default 'card'
+                    check (game_type in ('card', 'connect4', 'dama')),
+  game_state      jsonb   not null default '{}',
   created_at      timestamptz default now(),
   updated_at      timestamptz default now()
 );

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { theme } from '../theme.js'
 
@@ -188,9 +188,10 @@ function WinParticles({ color }) {
 }
 
 // Win celebration overlay
-function WinOverlay({ winner, scores, onPlayAgain }) {
+function WinOverlay({ winner, scores, onPlayAgain, winnerLabel }) {
   const isDraw = winner === 0
   const color = isDraw ? '#9B7B6B' : P[winner].disc
+  const winnerName = winnerLabel ?? (winner && winner !== 0 ? `Player ${winner}` : null)
 
   return (
     <>
@@ -250,7 +251,7 @@ function WinOverlay({ winner, scores, onPlayAgain }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            {isDraw ? "It's a Draw!" : `Player ${winner} Wins!`}
+            {isDraw ? "It's a Draw!" : `${winnerName} Win${winnerName === 'You' ? '!' : 's!'}`}
           </motion.h2>
 
           {!isDraw && (
@@ -319,44 +320,94 @@ function WinOverlay({ winner, scores, onPlayAgain }) {
   )
 }
 
-export default function Connect4({ onBack }) {
-  const [board, setBoard] = useState(createBoard)
-  const [currentPlayer, setCurrentPlayer] = useState(1)
-  const [winner, setWinner] = useState(null)
-  const [scores, setScores] = useState({ 1: 0, 2: 0 })
-  const [winCells, setWinCells] = useState([])
+export default function Connect4({
+  onBack,
+  isRemote = false,
+  myPlayer = 1,
+  isMyTurn = true,
+  remoteState = null,
+  onRemoteDrop,
+  onPlayAgain,
+  partnerName = 'Partner',
+}) {
+  // Local state (used when !isRemote)
+  const [localBoard, setLocalBoard] = useState(createBoard)
+  const [localCurrentPlayer, setLocalCurrentPlayer] = useState(1)
+  const [localWinner, setLocalWinner] = useState(null)
+  const [localScores, setLocalScores] = useState({ 1: 0, 2: 0 })
+  const [localWinCells, setLocalWinCells] = useState([])
   const [hoverCol, setHoverCol] = useState(null)
   const [lastDrop, setLastDrop] = useState(null)
 
+  // Use remote state or local state
+  const board         = isRemote ? (remoteState?.board ?? createBoard()) : localBoard
+  const currentPlayer = isRemote ? (remoteState?.currentPlayer ?? 1) : localCurrentPlayer
+  const winner        = isRemote ? (remoteState?.winner !== undefined ? remoteState.winner : null) : localWinner
+  const scores        = isRemote ? (remoteState?.scores ?? { 1: 0, 2: 0 }) : localScores
+  const winCells      = isRemote ? (remoteState?.winCells ?? []) : localWinCells
+
   const isOver = winner !== null
+
+  // Detect new disc for drop animation (works for both local and remote)
+  const prevBoardRef = useRef(board)
+  useEffect(() => {
+    const prev = prevBoardRef.current
+    if (prev === board) return
+    outer: for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if ((prev?.[r]?.[c] ?? 0) === 0 && board[r]?.[c] !== 0) {
+          setLastDrop({ row: r, col: c })
+          playDrop()
+          break outer
+        }
+      }
+    }
+    prevBoardRef.current = board
+  }, [board])
+
+  // Play win sound when winner is set
+  const prevWinnerRef = useRef(winner)
+  useEffect(() => {
+    if (winner !== null && prevWinnerRef.current === null) playWin()
+    prevWinnerRef.current = winner
+  }, [winner])
 
   const handleColClick = useCallback((col) => {
     if (isOver || board[0][col] !== 0) return
+    if (isRemote) {
+      if (!isMyTurn) return
+      onRemoteDrop?.(col)
+      return
+    }
     const result = dropDisc(board, col, currentPlayer)
     if (!result) return
     const { board: newBoard, row } = result
-    playDrop()
-    setBoard(newBoard)
+    setLocalBoard(newBoard)
     setLastDrop({ row, col })
     if (checkWin(newBoard, row, col, currentPlayer)) {
-      playWin()
-      setWinner(currentPlayer)
-      setWinCells(getWinningCells(newBoard))
-      setScores(s => ({ ...s, [currentPlayer]: s[currentPlayer] + 1 }))
+      setLocalWinner(currentPlayer)
+      setLocalWinCells(getWinningCells(newBoard))
+      setLocalScores(s => ({ ...s, [currentPlayer]: s[currentPlayer] + 1 }))
     } else if (isBoardFull(newBoard)) {
-      setWinner(0)
+      setLocalWinner(0)
     } else {
-      setCurrentPlayer(p => p === 1 ? 2 : 1)
+      setLocalCurrentPlayer(p => p === 1 ? 2 : 1)
     }
-  }, [board, currentPlayer, isOver])
+  }, [board, currentPlayer, isOver, isRemote, isMyTurn, onRemoteDrop])
 
   const resetGame = () => {
-    setBoard(createBoard())
-    setCurrentPlayer(1)
-    setWinner(null)
-    setWinCells([])
+    if (isRemote) { onPlayAgain?.(); return }
+    setLocalBoard(createBoard())
+    setLocalCurrentPlayer(1)
+    setLocalWinner(null)
+    setLocalWinCells([])
     setLastDrop(null)
     setHoverCol(null)
+  }
+
+  const playerLabel = (p) => {
+    if (!isRemote) return `Player ${p}`
+    return p === myPlayer ? 'You' : partnerName
   }
 
   const isWinCell = (row, col) => winCells.some(([r, c]) => r === row && c === col)
@@ -382,15 +433,18 @@ export default function Connect4({ onBack }) {
 
         <h1 className="font-serif text-xl" style={{ color: theme.app.text }}>Connect 4</h1>
 
-        <motion.button
-          onClick={() => { resetGame(); setScores({ 1: 0, 2: 0 }) }}
-          className="text-xs font-medium px-3.5 py-2 rounded-xl"
-          style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
-          whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }}
-          whileTap={{ scale: 0.97 }}
-        >
-          Reset
-        </motion.button>
+        {!isRemote && (
+          <motion.button
+            onClick={() => { resetGame(); setLocalScores({ 1: 0, 2: 0 }) }}
+            className="text-xs font-medium px-3.5 py-2 rounded-xl"
+            style={{ color: theme.app.textMuted, backgroundColor: theme.app.pill, border: `1px solid ${theme.app.border}` }}
+            whileHover={{ backgroundColor: 'rgba(140,100,200,0.15)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            Reset
+          </motion.button>
+        )}
+        {isRemote && <div style={{ width: 60 }} />}
       </div>
 
       <div className="flex-1 flex flex-col items-center px-3 py-4 gap-4">
@@ -451,7 +505,7 @@ export default function Connect4({ onBack }) {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: P[currentPlayer].disc, boxShadow: `0 0 8px ${P[currentPlayer].glow}` }}
               />
-              Player {currentPlayer}'s turn
+              {playerLabel(currentPlayer)}'s turn{isRemote && currentPlayer === myPlayer ? ' — drop a disc' : ''}
             </motion.div>
           )}
         </AnimatePresence>
@@ -522,7 +576,7 @@ export default function Connect4({ onBack }) {
                         transition: 'background-color 0.12s ease',
                       }}
                       onClick={() => handleColClick(colIdx)}
-                      onMouseEnter={() => setHoverCol(colIdx)}
+                      onMouseEnter={() => (!isRemote || isMyTurn) && setHoverCol(colIdx)}
                       onMouseLeave={() => setHoverCol(null)}
                       initial={isNew ? { y: -500, scaleY: 0.8 } : false}
                       animate={
@@ -559,6 +613,7 @@ export default function Connect4({ onBack }) {
             winner={winner}
             scores={scores}
             onPlayAgain={resetGame}
+            winnerLabel={winner && winner !== 0 ? playerLabel(winner) : null}
           />
         )}
       </AnimatePresence>

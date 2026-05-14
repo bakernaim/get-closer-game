@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from './contexts/AuthContext'
 import { useGameState } from './hooks/useGameState.js'
 import { useRemoteGame } from './hooks/useRemoteGame.js'
+import { useRemoteConnect4 } from './hooks/useRemoteConnect4.js'
+import { useRemoteDama } from './hooks/useRemoteDama.js'
 import { supabase } from './lib/supabase'
 import AuthPage from './pages/AuthPage.jsx'
 import Home from './pages/Home.jsx'
@@ -31,8 +33,11 @@ export default function App() {
   const [remoteSessionId, setRemoteSessionId] = useState(null)
   const [pendingInvite, setPendingInvite] = useState(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteGameType, setInviteGameType] = useState('card')
 
-  const remoteGame = useRemoteGame(remoteSessionId, user?.id)
+  const remoteGame      = useRemoteGame(remoteSessionId, user?.id)
+  const remoteConnect4  = useRemoteConnect4(remoteSessionId, user?.id)
+  const remoteDama      = useRemoteDama(remoteSessionId, user?.id)
 
   // Subscribe to incoming invites (sessions where I'm the guest and status = 'waiting')
   useEffect(() => {
@@ -92,20 +97,20 @@ export default function App() {
   }
 
   async function handleAcceptInvite(invite) {
-    // Mark session as topic_selection so host knows partner joined
+    const newStatus = invite.game_type === 'card' ? 'topic_selection' : 'playing'
     await supabase
       .from('game_sessions')
-      .update({ status: 'topic_selection', updated_at: new Date().toISOString() })
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', invite.id)
     setPendingInvite(null)
     setRemoteSessionId(invite.id)
-    setActiveGame('getCloser-remote')
+    setActiveGame(`${invite.game_type ?? 'card'}-remote`)
   }
 
   function handleInviteCreated(session) {
     setShowInviteModal(false)
     setRemoteSessionId(session.id)
-    setActiveGame('getCloser-remote')
+    setActiveGame(`${session.game_type ?? 'card'}-remote`)
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -137,7 +142,7 @@ export default function App() {
           <motion.div key="home" {...screenVariants} className="min-h-screen">
             <Home
               onSelectGame={handleSelectGame}
-              onPlayOnline={() => setShowInviteModal(true)}
+              onPlayOnline={(gameType) => { setInviteGameType(gameType); setShowInviteModal(true) }}
               pendingInvite={pendingInvite}
               onAcceptInvite={handleAcceptInvite}
               onDeclineInvite={() => setPendingInvite(null)}
@@ -175,17 +180,72 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* ── Connect 4 ─────────────────────────────────────────── */}
+        {/* ── Connect 4 local ───────────────────────────────────── */}
         {activeGame === 'connect4' && (
           <motion.div key="connect4" {...screenVariants} className="min-h-screen">
             <Connect4 onBack={handleBackToHome} />
           </motion.div>
         )}
 
-        {/* ── Dama ──────────────────────────────────────────────── */}
+        {/* ── Connect 4 remote ──────────────────────────────────── */}
+        {activeGame === 'connect4-remote' && (
+          <motion.div key="connect4-remote" {...screenVariants} className="min-h-screen">
+            <RemoteGameWrapper
+              session={remoteConnect4.session}
+              loading={remoteConnect4.loading}
+              myRole={remoteConnect4.myPlayer === 1 ? 'host' : 'guest'}
+              partnerProfile={remoteConnect4.partnerProfile}
+              profile={profile}
+              onLeave={handleLeaveRemoteGame}
+            >
+              <Connect4
+                onBack={handleLeaveRemoteGame}
+                isRemote
+                myPlayer={remoteConnect4.myPlayer}
+                isMyTurn={remoteConnect4.isMyTurn}
+                remoteState={remoteConnect4.remoteState}
+                onRemoteDrop={remoteConnect4.dropCol}
+                onPlayAgain={remoteConnect4.playAgain}
+                partnerName={remoteConnect4.partnerProfile?.username ?? 'Partner'}
+              />
+            </RemoteGameWrapper>
+          </motion.div>
+        )}
+
+        {/* ── Dama local ────────────────────────────────────────── */}
         {activeGame === 'dama' && (
           <motion.div key="dama" {...screenVariants} className="min-h-screen">
             <Dama onBack={handleBackToHome} />
+          </motion.div>
+        )}
+
+        {/* ── Dama remote ───────────────────────────────────────── */}
+        {activeGame === 'dama-remote' && (
+          <motion.div key="dama-remote" {...screenVariants} className="min-h-screen">
+            <RemoteGameWrapper
+              session={remoteDama.session}
+              loading={remoteDama.loading}
+              myRole={remoteDama.myPlayer === 1 ? 'host' : 'guest'}
+              partnerProfile={remoteDama.partnerProfile}
+              profile={profile}
+              onLeave={handleLeaveRemoteGame}
+            >
+              <Dama
+                onBack={handleLeaveRemoteGame}
+                isRemote
+                myPlayer={remoteDama.myPlayer}
+                isMyTurn={remoteDama.isMyTurn}
+                remoteBoard={remoteDama.board}
+                remoteTurn={remoteDama.turn}
+                remoteScores={remoteDama.remoteState?.scores}
+                remoteWinner={remoteDama.remoteState?.winner ?? null}
+                remoteJumpPiece={remoteDama.jumpPiece}
+                remoteSkipCells={remoteDama.skipCells}
+                onRemoteMove={remoteDama.makeMove}
+                onPlayAgain={remoteDama.playAgain}
+                partnerName={remoteDama.partnerProfile?.username ?? 'Partner'}
+              />
+            </RemoteGameWrapper>
           </motion.div>
         )}
       </AnimatePresence>
@@ -196,6 +256,7 @@ export default function App() {
           <InviteModal
             user={user}
             profile={profile}
+            gameType={inviteGameType}
             onCreated={handleInviteCreated}
             onClose={() => setShowInviteModal(false)}
           />
@@ -295,4 +356,29 @@ function RemoteGameFlow({ remoteGame, myRole, partnerProfile, onLeave, profile }
       onLeave={onLeave}
     />
   )
+}
+
+// ── Wrapper for board games (Connect4 / Dama) — handles waiting state ────────
+function RemoteGameWrapper({ session, loading, myRole, partnerProfile, profile, onLeave, children }) {
+  const partnerName = partnerProfile?.username ?? 'Partner'
+
+  if (loading || !session) {
+    return <WaitingScreen title="Connecting..." subtitle="Setting up your game session." onLeave={onLeave} />
+  }
+
+  if (session.status === 'waiting' && myRole === 'host') {
+    return (
+      <WaitingScreen
+        title={`Waiting for ${partnerName}`}
+        subtitle={`Ask them to open the app and accept your invite. Your number is #${profile?.user_number}.`}
+        onLeave={onLeave}
+      />
+    )
+  }
+
+  if (session.status === 'waiting' && myRole === 'guest') {
+    return <WaitingScreen title="Joining game..." subtitle="Connecting you to the session." onLeave={onLeave} />
+  }
+
+  return children
 }

@@ -2,7 +2,27 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 
-export default function InviteModal({ user, profile, onCreated, onClose }) {
+function initialGameState(gameType) {
+  if (gameType === 'connect4') {
+    return {
+      board: Array.from({ length: 6 }, () => Array(7).fill(0)),
+      currentPlayer: 1,
+      scores: { 1: 0, 2: 0 },
+      winner: null,
+      winCells: [],
+    }
+  }
+  if (gameType === 'dama') {
+    const b = Array.from({ length: 8 }, () => Array(8).fill(0))
+    for (let c = 0; c < 8; c++) { b[1][c] = 2; b[2][c] = 2; b[5][c] = 1; b[6][c] = 1 }
+    return { board: b, turn: 1, scores: { 1: 0, 2: 0 }, winner: null, jumpPiece: null, skipCells: [] }
+  }
+  return {} // card game manages its own state
+}
+
+const GAME_LABELS = { card: "Let's Get Closer", connect4: 'Connect 4', dama: 'Dama' }
+
+export default function InviteModal({ user, profile, gameType = 'card', onCreated, onClose }) {
   const [partnerNumber, setPartnerNumber] = useState('')
   const [partnerProfile, setPartnerProfile] = useState(null)
   const [lookupError, setLookupError] = useState('')
@@ -45,6 +65,8 @@ export default function InviteModal({ user, profile, onCreated, onClose }) {
         host_id: user.id,
         guest_id: partnerProfile.id,
         status: 'waiting',
+        game_type: gameType,
+        game_state: initialGameState(gameType),
       })
       .select()
       .single()
@@ -82,7 +104,7 @@ export default function InviteModal({ user, profile, onCreated, onClose }) {
 
         <h2 className="font-serif text-2xl mb-1" style={{ color: '#3D2B6B' }}>Invite Your Partner</h2>
         <p className="text-sm mb-5" style={{ color: 'rgba(100,80,140,0.55)' }}>
-          Ask them to open the app — their player number is shown at the top of the home screen.
+          Playing <strong>{GAME_LABELS[gameType]}</strong> online. Ask them to open the app — their player number is shown at the top of the home screen.
         </p>
 
         {/* Your number */}
